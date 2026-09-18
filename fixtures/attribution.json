@@ -1,0 +1,10 @@
+{
+  "confidence": "high",
+  "event_name": "ssm:PutParameter",
+  "event_time": "2026-09-12T02:14:55Z",
+  "principal_arn": "arn:aws:iam::111122223333:user/rahul",
+  "principal_type": "IAMUser",
+  "source_ip": "203.0.113.4",
+  "cloudtrail_event_id": "e1f2a3b4-c5d6-e7f8-9a0b-c1d2e3f4a5b6",
+  "narrative": "Set in production by rahul via ssm:PutParameter at 07:44 IST on 12 Sep. No corresponding change in staging."
+}
