@@ -1,0 +1,35 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadWorkloadConfig",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:ListFunctions",
+        "lambda:GetFunctionConfiguration",
+        "ecs:ListClusters",
+        "ecs:ListServices",
+        "ecs:DescribeServices",
+        "ecs:DescribeTaskDefinition",
+        "ssm:GetParametersByPath",
+        "ssm:DescribeParameters",
+        "secretsmanager:ListSecrets",
+        "secretsmanager:DescribeSecret",
+        "appconfig:GetLatestConfiguration",
+        "appconfig:StartConfigurationSession"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenySecretAndDecryptedReads",
+      "Effect": "Deny",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "kms:Decrypt"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
