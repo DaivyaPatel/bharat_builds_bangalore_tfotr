@@ -49,9 +49,39 @@ flowchart TD
 ```
 
 ### Step Functions Pipeline Graph
-*(Please replace this placeholder with the `step-functions-graph.png` screenshot from DL-014)*
 
-![Step Functions Graph](./step-functions-graph.png)
+Below is the state machine execution graph for the core backend pipeline, detailing the Map state and the resilient Catch blocks for each execution phase.
+
+```mermaid
+flowchart TD
+    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#232F3E;
+    classDef fail fill:#D13212,stroke:#fff,stroke-width:2px,color:#fff;
+    
+    Start((Start)) --> MapEnv
+    
+    subgraph MapEnv [Map state: MapEnvironments]
+        direction TD
+        RunCollector[AWS Lambda: Invoke<br><b>RunCollector</b>]:::aws
+        RunDiff[AWS Lambda: Invoke<br><b>RunDiff</b>]:::aws
+        RunAttribute[AWS Lambda: Invoke<br><b>RunAttribute</b>]:::aws
+        RunPersist[AWS Lambda: Invoke<br><b>RunPersist</b>]:::aws
+        FailStage[Fail state<br><b>FailStage</b>]:::fail
+        
+        RunCollector --> RunDiff
+        RunDiff --> RunAttribute
+        RunAttribute --> RunPersist
+        RunPersist --> MapEnd(( ))
+        
+        RunCollector -->|Catch #1| FailStage
+        RunDiff -->|Catch #1| FailStage
+        RunAttribute -->|Catch #1| FailStage
+        RunPersist -->|Catch #1| FailStage
+        
+        FailStage --> MapEnd
+    end
+    
+    MapEnv --> EndNode((End))
+```
 
 ## Getting Started
 
