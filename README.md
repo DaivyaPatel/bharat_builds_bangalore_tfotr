@@ -51,7 +51,7 @@ flowchart TD
 ### Step Functions Pipeline Graph
 *(Please replace this placeholder with the `step-functions-graph.png` screenshot from DL-014)*
 
-![Step Functions Graph](step-functions-graph.png)
+<img src="https://raw.githubusercontent.com/DaivyaPatel/bharat_builds_bangalore_tfotr/dl-034-architecture-diagram/step-functions-graph.png" alt="Step Functions Graph" width="800">
 
 ## Getting Started
 
