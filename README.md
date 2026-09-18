@@ -51,7 +51,7 @@ flowchart TD
 ### Step Functions Pipeline Graph
 *(Please replace this placeholder with the `step-functions-graph.png` screenshot from DL-014)*
 
-![Step Functions Graph](./step-functions-graph.png)
+![Step Functions Graph](step-functions-graph.png)
 
 ## Getting Started
 
