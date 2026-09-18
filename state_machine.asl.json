@@ -1,0 +1,121 @@
+{
+  "Comment": "DriftLens Step Functions State Machine",
+  "StartAt": "MapEnvironments",
+  "States": {
+    "MapEnvironments": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "RunCollector",
+        "States": {
+          "RunCollector": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+              "FunctionName": "${CollectorLambdaArn}",
+              "Payload": {
+                "environment.$": "$"
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2.0
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "Next": "FailStage"
+              }
+            ],
+            "Next": "RunDiff"
+          },
+          "RunDiff": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+              "FunctionName": "${DiffLambdaArn}",
+              "Payload.$": "$"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2.0
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "Next": "FailStage"
+              }
+            ],
+            "Next": "RunAttribute"
+          },
+          "RunAttribute": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+              "FunctionName": "${AttributeLambdaArn}",
+              "Payload.$": "$"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2.0
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "Next": "FailStage"
+              }
+            ],
+            "Next": "RunPersist"
+          },
+          "RunPersist": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+              "FunctionName": "${PersistLambdaArn}",
+              "Payload.$": "$"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2.0
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "Next": "FailStage"
+              }
+            ],
+            "End": true
+          },
+          "FailStage": {
+            "Type": "Fail",
+            "Error": "PipelineFailed",
+            "Cause": "One of the stages failed"
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}
