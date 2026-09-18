@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "snapshot_id": "01J8XK2M4N7P9QRSTVWXYZB",
+  "environment": "production",
+  "account_id": "111122223333",
+  "region": "ap-south-2",
+  "captured_at": "2026-09-19T08:14:02Z",
+  "collector_version": "0.1.0",
+  "resources": [
+    {
+      "resource_type": "lambda",
+      "logical_name": "checkout",
+      "resource_arn": "arn:aws:lambda:ap-south-2:111122223333:function:prod-checkout",
+      "config": {
+        "env_vars": {
+          "FEATURE_NEW_CHECKOUT": { "value": "false", "redacted": false },
+          "API_TIMEOUT_MS": { "value": "7000", "redacted": false },
+          "DB_PASSWORD": { "value": null, "redacted": true, "redaction_reason": "key_name_match", "value_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b" }
+        },
+        "runtime": "python3.12",
+        "memory_mb": 512,
+        "timeout_s": 30,
+        "layers": ["arn:aws:lambda:ap-south-1:111122223333:layer:common:14"],
+        "last_modified": "2026-09-12T02:14:55Z"
+      }
+    }
+  ],
+  "parameters": {
+    "/app/api_timeout": {
+      "value": "30",
+      "type": "String",
+      "version": 4,
+      "last_modified": "2026-09-01T11:02:00Z",
+      "redacted": false
+    }
+  },
+  "secrets": {
+    "prod/db": { "version_id": "a1b2c3", "last_changed": "2026-08-30T09:00:00Z" }
+  },
+  "flags": {
+    "new_checkout_enabled": { "value": true, "source": "appconfig" }
+  }
+}
