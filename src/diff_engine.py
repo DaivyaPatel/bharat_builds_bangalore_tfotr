@@ -78,19 +78,40 @@ def _diff_env_vars(prefix: str, res_a: Optional[dict], res_b: Optional[dict]) ->
             entries.append(_make_entry(key, KIND_MISSING_IN_B, _display_value(entry_a), None))
             continue
 
-        # Both sides have this variable. If either is redacted, compare hashes.
+        # Both sides have this variable. If either is redacted, this is a
+        # redacted comparison: compare hashes only, and the output must
+        # NEVER show anything but "<redacted>" for value_a/value_b — not
+        # the hash, not the value, regardless of which side is redacted
+        # or whether a hash is present at all.
         redacted_a = entry_a.get("redacted", False)
         redacted_b = entry_b.get("redacted", False)
 
         if redacted_a or redacted_b:
             hash_a = entry_a.get("value_sha256")
             hash_b = entry_b.get("value_sha256")
-            diff = _compare_scalar(key, hash_a, hash_b)
-            if diff:
-                # Never surface the real value for a redacted key, even in a diff.
-                diff["value_a"] = "<redacted>"
-                diff["value_b"] = "<redacted>"
-                entries.append(diff)
+
+            if hash_a is None and hash_b is None:
+                # Neither side has a hash to compare (e.g. hash generation
+                # failed upstream, or one side was redacted without ever
+                # producing a hash). We cannot verify sameness — this is
+                # NOT the same as "no drift", so it must not be silently
+                # dropped. Report it explicitly as a comparison we can't
+                # verify, rather than staying quiet about it.
+                entries.append(
+                    _make_entry(key, KIND_TYPE_MISMATCH, "<redacted>", "<redacted>")
+                )
+                continue
+
+            if hash_a != hash_b:
+                # Covers: both hashes present and differ, OR only one side
+                # has a hash at all (redaction inconsistency between
+                # environments). Either way this is a real, reportable
+                # difference, and the real hash value must never appear
+                # in the output — only "<redacted>".
+                entries.append(
+                    _make_entry(key, KIND_VALUE_MISMATCH, "<redacted>", "<redacted>")
+                )
+            # else: hashes match exactly -> same secret in both envs, no drift.
         else:
             diff = _compare_scalar(key, entry_a.get("value"), entry_b.get("value"))
             if diff:
