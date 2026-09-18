@@ -10,7 +10,7 @@
     {
       "resource_type": "lambda",
       "logical_name": "checkout",
-      "resource_arn": "arn:aws:lambda:ap-south-1:111122223333:function:prod-checkout",
+      "resource_arn": "arn:aws:lambda:ap-south-2:111122223333:function:prod-checkout",
       "config": {
         "env_vars": {
           "FEATURE_NEW_CHECKOUT": { "value": "false", "redacted": false },
