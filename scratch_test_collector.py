@@ -1,5 +1,6 @@
 from src.collector.lambda_collector import LambdaCollector
 from src.collector.ssm_collector import SSMCollector
+from src.collector.ecs_collector import ECSCollector
 import json
 
 if __name__ == "__main__":
@@ -22,3 +23,12 @@ if __name__ == "__main__":
         print(json.dumps(ssm_params, indent=2))
     except Exception as e:
         print(f"Error fetching SSM from AWS: {e}")
+        
+    print("\nCollecting ECS services...")
+    ecs_collector = ECSCollector()
+    try:
+        ecs_resources = ecs_collector.collect(cluster_name="default")
+        print(f"Successfully collected {len(ecs_resources)} ECS services.")
+        print(json.dumps(ecs_resources, indent=2))
+    except Exception as e:
+        print(f"Error fetching ECS from AWS: {e}")
