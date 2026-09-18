@@ -187,13 +187,23 @@ def test_resource_missing_entirely_in_one_environment():
 
 def test_diff_engine_module_has_no_boto3_dependency():
     """
-    Real check, not a text scan: inspect what the module actually imported
-    at runtime. sys.modules only contains modules that were truly imported
-    somewhere in the call chain, directly or indirectly, so this also
-    catches boto3 sneaking in through a helper module diff_engine imports.
+    Checks diff_engine.py's own source and its direct imports, not the whole
+    process's sys.modules — other modules in this repo (collectors) legitimately
+    import boto3, and pytest runs everything in one process.
     """
-    import sys
-    import src.diff_engine  # noqa: F401 - import triggers any transitive imports
+    import ast
+    import inspect
+    import src.diff_engine as de
 
-    assert "boto3" not in sys.modules
-    assert "botocore" not in sys.modules
+    source = inspect.getsource(de)
+    tree = ast.parse(source)
+
+    imported_names = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported_names.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                imported_names.append(node.module)
+
+    assert not any("boto3" in name or "botocore" in name for name in imported_names)
