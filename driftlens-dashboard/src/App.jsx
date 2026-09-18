@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DriftTable from "./components/DriftTable";
+import AttributionPanel from "./components/AttributionPanel";
 import comparisonData from "./data/comparison_response_sample.json";
 
 function App() {
@@ -13,11 +14,16 @@ function App() {
         {comparisonData.data.summary.suspicious} suspicious,{" "}
         {comparisonData.data.summary.expected} expected
       </p>
+
       <DriftTable comparison={comparisonData.data} onRowClick={setSelectedDrift} />
+
       {selectedDrift && (
-        <pre className="mt-6 p-4 bg-gray-800 rounded text-xs overflow-x-auto">
-          {JSON.stringify(selectedDrift, null, 2)}
-        </pre>
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-2">
+            {selectedDrift.key}
+          </h2>
+          <AttributionPanel attribution={selectedDrift.attribution} />
+        </div>
       )}
     </div>
   );
