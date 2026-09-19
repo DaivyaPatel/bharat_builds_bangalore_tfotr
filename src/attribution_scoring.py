@@ -22,6 +22,16 @@ def _short_principal(principal_arn):
     return principal_arn
 
 
+def _is_likely_ci_role(principal_arn, principal_type):
+    if principal_type != "AssumedRole":
+        return False
+    if not principal_arn:
+        return False
+    lowered = principal_arn.lower()
+    ci_indicators = ("ci", "cd", "deploy", "pipeline", "build", "github-actions", "gitlab", "jenkins", "terraform")
+    return any(indicator in lowered for indicator in ci_indicators)
+
+
 def score_attribution(candidate_events):
     if not candidate_events:
         return {
@@ -39,9 +49,16 @@ def score_attribution(candidate_events):
         event = candidate_events[0]
         principal = _short_principal(event.get("principal_arn"))
         time_str = _format_ist(event.get("event_time"))
-        narrative = (
-            f"Set by {principal} via {event.get('event_name')} at {time_str}."
-        )
+        is_ci = _is_likely_ci_role(event.get("principal_arn"), event.get("principal_type"))
+        if is_ci:
+            narrative = (
+                f"Set via an automated deploy ({principal}) running {event.get('event_name')} "
+                f"at {time_str}. This looks like an IaC/CI-driven change, not a direct human edit."
+            )
+        else:
+            narrative = (
+                f"Set by {principal} via {event.get('event_name')} at {time_str}."
+            )
         return {
             "confidence": "high",
             "event_name": event.get("event_name"),
@@ -56,11 +73,19 @@ def score_attribution(candidate_events):
     most_recent = max(candidate_events, key=lambda e: e.get("event_time") or "")
     principal = _short_principal(most_recent.get("principal_arn"))
     time_str = _format_ist(most_recent.get("event_time"))
-    narrative = (
-        f"Several candidate events found in the divergence window; "
-        f"most likely {most_recent.get('event_name')} by {principal} at {time_str}, "
-        f"but not uniquely confirmed."
-    )
+    is_ci = _is_likely_ci_role(most_recent.get("principal_arn"), most_recent.get("principal_type"))
+    if is_ci:
+        narrative = (
+            f"Several candidate events found in the divergence window; "
+            f"most likely an automated deploy ({principal}) running {most_recent.get('event_name')} "
+            f"at {time_str}, but not uniquely confirmed."
+        )
+    else:
+        narrative = (
+            f"Several candidate events found in the divergence window; "
+            f"most likely {most_recent.get('event_name')} by {principal} at {time_str}, "
+            f"but not uniquely confirmed."
+        )
     return {
         "confidence": "medium",
         "event_name": most_recent.get("event_name"),

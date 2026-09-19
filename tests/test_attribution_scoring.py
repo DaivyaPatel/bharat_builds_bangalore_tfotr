@@ -137,3 +137,121 @@ def test_principal_arn_shortened_to_username_in_narrative():
     result = score_attribution(events)
     assert "ci-deploy-role" in result["narrative"]
     assert "arn:aws:iam" not in result["narrative"]
+
+
+def test_ci_deploy_role_flagged_as_automated_not_human():
+    events = [{
+        "event_name": "lambda:UpdateFunctionConfiguration",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:role/ci-deploy-role",
+        "principal_type": "AssumedRole",
+        "source_ip": "203.0.113.9",
+        "cloudtrail_event_id": "f2a3",
+    }]
+    result = score_attribution(events)
+    assert "automated deploy" in result["narrative"]
+    assert "IaC/CI-driven" in result["narrative"]
+    assert result["confidence"] == "high"
+
+
+def test_terraform_role_flagged_as_automated():
+    events = [{
+        "event_name": "lambda:UpdateFunctionConfiguration",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:role/terraform-execution-role",
+        "principal_type": "AssumedRole",
+        "source_ip": "203.0.113.9",
+        "cloudtrail_event_id": "f2a3",
+    }]
+    result = score_attribution(events)
+    assert "automated deploy" in result["narrative"]
+
+
+def test_github_actions_role_flagged_as_automated():
+    events = [{
+        "event_name": "lambda:UpdateFunctionConfiguration",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:role/github-actions-deploy",
+        "principal_type": "AssumedRole",
+        "source_ip": "203.0.113.9",
+        "cloudtrail_event_id": "f2a3",
+    }]
+    result = score_attribution(events)
+    assert "automated deploy" in result["narrative"]
+
+
+def test_human_iam_user_never_flagged_as_automated():
+    events = [{
+        "event_name": "ssm:PutParameter",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:user/rahul",
+        "principal_type": "IAMUser",
+        "source_ip": "203.0.113.4",
+        "cloudtrail_event_id": "e1f2",
+    }]
+    result = score_attribution(events)
+    assert "automated deploy" not in result["narrative"]
+    assert "Set by rahul" in result["narrative"]
+
+
+def test_generic_assumed_role_with_no_ci_keyword_not_falsely_flagged():
+    events = [{
+        "event_name": "lambda:UpdateFunctionConfiguration",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:role/some-other-role",
+        "principal_type": "AssumedRole",
+        "source_ip": "203.0.113.9",
+        "cloudtrail_event_id": "f2a3",
+    }]
+    result = score_attribution(events)
+    assert "automated deploy" not in result["narrative"]
+    assert "Set by some-other-role" in result["narrative"]
+
+
+def test_medium_confidence_also_flags_ci_role_correctly():
+    ci_event = {
+        "event_name": "lambda:UpdateFunctionConfiguration",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:role/ci-deploy-role",
+        "principal_type": "AssumedRole",
+        "source_ip": "203.0.113.9",
+        "cloudtrail_event_id": "f2a3",
+    }
+    older_event = {
+        "event_name": "ssm:PutParameter",
+        "event_time": "2026-09-12T01:00:00Z",
+        "principal_arn": "arn:aws:iam::111122223333:user/rahul",
+        "principal_type": "IAMUser",
+        "source_ip": "203.0.113.4",
+        "cloudtrail_event_id": "e1f2",
+    }
+    result = score_attribution([older_event, ci_event])
+    assert result["confidence"] == "medium"
+    assert "automated deploy" in result["narrative"]
+    assert "not uniquely confirmed" in result["narrative"]
+
+
+def test_ci_detection_is_case_insensitive():
+    events = [{
+        "event_name": "lambda:UpdateFunctionConfiguration",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:role/CI-Deploy-Role",
+        "principal_type": "AssumedRole",
+        "source_ip": "203.0.113.9",
+        "cloudtrail_event_id": "f2a3",
+    }]
+    result = score_attribution(events)
+    assert "automated deploy" in result["narrative"]
+
+
+def test_ci_detection_requires_assumed_role_type_not_just_name():
+    events = [{
+        "event_name": "lambda:UpdateFunctionConfiguration",
+        "event_time": "2026-09-12T02:14:55Z",
+        "principal_arn": "arn:aws:iam::111122223333:user/ci-deploy-role",
+        "principal_type": "IAMUser",
+        "source_ip": "203.0.113.9",
+        "cloudtrail_event_id": "f2a3",
+    }]
+    result = score_attribution(events)
+    assert "automated deploy" not in result["narrative"]
