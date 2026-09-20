@@ -1,6 +1,7 @@
 import json
 import os
-import requests
+import urllib.request
+import urllib.error
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -87,12 +88,7 @@ def _parse_model_response(raw_text):
     return explanation
 
 
-def explain_drift(drift):
-    if drift.get("severity") != "critical":
-        return None
-
-    prompt = _build_prompt(drift)
-
+def _call_groq(prompt):
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json",
@@ -107,11 +103,21 @@ def explain_drift(drift):
         "response_format": {"type": "json_object"},
     }
 
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(GROQ_URL, data=data, headers=headers, method="POST")
+
     try:
-        response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=15)
-        response.raise_for_status()
-        raw_text = response.json()["choices"][0]["message"]["content"]
-    except Exception:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        return body["choices"][0]["message"]["content"]
+    except (urllib.error.URLError, urllib.error.HTTPError, KeyError, IndexError, TimeoutError):
         return None
 
+
+def explain_drift(drift):
+    if drift.get("severity") != "critical":
+        return None
+
+    prompt = _build_prompt(drift)
+    raw_text = _call_groq(prompt)
     return _parse_model_response(raw_text)
