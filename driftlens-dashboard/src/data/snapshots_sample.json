@@ -1,0 +1,5 @@
+[
+  { "snapshot_id": "snap-1", "environment": "production", "captured_at": "2026-09-11T20:00:00Z" },
+  { "snapshot_id": "snap-2", "environment": "production", "captured_at": "2026-09-12T02:14:55Z" },
+  { "snapshot_id": "snap-3", "environment": "production", "captured_at": "2026-09-19T08:14:02Z" }
+]
