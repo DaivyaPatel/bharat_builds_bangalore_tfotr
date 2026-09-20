@@ -55,6 +55,7 @@ def update_lambda(function_name, zip_path, handler_name):
 
 if __name__ == "__main__":
     zip_path = create_zip()
+    update_lambda("driftlens-collector", zip_path, "src.collector_handler.lambda_handler")
     update_lambda("driftlens-diff", zip_path, "src.diff_handler.lambda_handler")
     update_lambda("driftlens-attribute", zip_path, "src.attribute_handler.lambda_handler")
     update_lambda("driftlens-persist", zip_path, "src.persist_handler.lambda_handler")

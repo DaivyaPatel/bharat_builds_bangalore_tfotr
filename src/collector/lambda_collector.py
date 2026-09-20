@@ -14,20 +14,30 @@ class LambdaCollector:
         self.client = client or boto3.client("lambda", region_name=region_name)
         self.salt = salt
 
-    def collect(self) -> List[Dict[str, Any]]:
+    def collect(self, environment: str = None) -> List[Dict[str, Any]]:
         resources = []
         paginator = self.client.get_paginator('list_functions')
         
         for page in paginator.paginate():
             for func in page.get("Functions", []):
-                logical_name = func.get("FunctionName")
+                raw_logical_name = func.get("FunctionName")
+                
+                if environment:
+                    prefix = f"{environment}-"
+                    if not raw_logical_name.startswith(prefix):
+                        continue
+                    logical_name = raw_logical_name[len(prefix):]
+                else:
+                    logical_name = raw_logical_name
                 
                 # Fetch full config per ticket DL-004 requirements
+                # Need to use the raw_logical_name to query AWS
                 try:
-                    config_resp = self.client.get_function_configuration(FunctionName=logical_name)
+                    config_resp = self.client.get_function_configuration(FunctionName=raw_logical_name)
                 except Exception:
                     # Fallback to list_functions data if get_function_configuration fails
                     config_resp = func
+
                 
                 env_vars_dict = {}
                 raw_env = config_resp.get("Environment", {}).get("Variables", {})

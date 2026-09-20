@@ -18,7 +18,7 @@ def lambda_handler(event, context):
     print("Collecting Lambda configurations...")
     lambda_coll = LambdaCollector()
     try:
-        lambdas = lambda_coll.collect()
+        lambdas = lambda_coll.collect(environment=environment)
     except Exception as e:
         print(f"Error collecting Lambdas: {e}")
         lambdas = []
