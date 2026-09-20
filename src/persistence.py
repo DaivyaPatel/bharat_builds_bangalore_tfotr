@@ -101,3 +101,65 @@ def delete_drift(pair: str, key: str) -> None:
     longer appear as ongoing.
     """
     _table.delete_item(Key={"pair": pair, "key": key})
+
+
+def _list_stored_keys_for_pair(pair: str) -> list[str]:
+    """
+    Return every key currently stored under this pair, following
+    pagination if the pair has more drift records than one Query page.
+    """
+    keys = []
+    last_evaluated_key = None
+
+    while True:
+        query_kwargs = {
+            "KeyConditionExpression": "pair = :pair",
+            "ExpressionAttributeValues": {":pair": pair},
+        }
+        if last_evaluated_key:
+            query_kwargs["ExclusiveStartKey"] = last_evaluated_key
+
+        response = _table.query(**query_kwargs)
+        keys.extend(item["key"] for item in response.get("Items", []))
+
+        last_evaluated_key = response.get("LastEvaluatedKey")
+        if not last_evaluated_key:
+            break
+
+    return keys
+
+
+def reconcile_drifts(pair: str, current_drifts: list[dict]) -> dict:
+    """
+    Remove any stored drift under this pair that no longer appears in
+    the latest diff run - meaning the divergence has been resolved.
+
+    current_drifts: the fresh list of drift dicts from this run's diff
+    (each expected to have a "key" field), for this same pair.
+
+    A malformed entry missing "key" is skipped rather than crashing
+    the whole reconciliation, but it IS reported back so the caller
+    can see something went wrong instead of it being silently dropped.
+
+    Returns a dict:
+        {"resolved_keys": [...], "skipped_malformed_entries": [...]}
+    """
+    current_keys = set()
+    skipped_malformed_entries = []
+
+    for drift in current_drifts:
+        if "key" not in drift:
+            skipped_malformed_entries.append(drift)
+            continue
+        current_keys.add(drift["key"])
+
+    stored_keys = _list_stored_keys_for_pair(pair)
+    resolved_keys = [key for key in stored_keys if key not in current_keys]
+
+    for key in resolved_keys:
+        delete_drift(pair, key)
+
+    return {
+        "resolved_keys": resolved_keys,
+        "skipped_malformed_entries": skipped_malformed_entries,
+    }
