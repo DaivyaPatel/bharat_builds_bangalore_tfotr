@@ -5,7 +5,7 @@ import urllib.error
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "openai/gpt-oss-120b"
+GROQ_MODEL = "llama3-8b-8192"
 MAX_EXPLANATION_CHARS = 400
 MAX_VALUE_CHARS = 200
 
